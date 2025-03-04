@@ -1,0 +1,11 @@
+Cargo.lock
+.vscode/
+.idea/
+*.rs.bk
+*.swp
+*.swo
+**/*.d
+**/*.o
+tests/
+*.log
+.deps/
