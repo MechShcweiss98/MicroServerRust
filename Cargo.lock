@@ -10,6 +10,7 @@ dependencies = [
  "chrono",
  "dotenvy",
  "entity",
+ "lazy_static",
  "migration",
  "sea-orm 0.12.15",
  "serde",
