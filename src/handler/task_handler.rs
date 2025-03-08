@@ -2,20 +2,18 @@ use crate::{
   model::task_model::{CreateTaskReq, TaskModel, UpdateTaskReq},
   utils::api_error::APIError,
 };
-use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
+use axum::{Extension, Json, extract::Path, http::StatusCode, response::IntoResponse};
 use chrono::Utc;
 use entity::task;
 use sea_orm::{
-  ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter, Set,
+  ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
 };
 
 //get by id
-pub async fn get_task_by_id(Path(id): Path<i32>) -> Result<Json<TaskModel>, APIError> {
-  let db: DatabaseConnection =
-    Database::connect("postgres://user:password@localhost:5432/data_base")
-      .await
-      .unwrap();
-
+pub async fn get_task_by_id(
+  Extension(db): Extension<DatabaseConnection>,
+  Path(id): Path<i32>,
+) -> Result<Json<TaskModel>, APIError> {
   let task = entity::task::Entity::find_by_id(id)
     .one(&db)
     .await
@@ -40,12 +38,9 @@ pub async fn get_task_by_id(Path(id): Path<i32>) -> Result<Json<TaskModel>, APIE
 }
 
 //Get
-pub async fn get_task() -> Result<Json<Vec<TaskModel>>, APIError> {
-  let db: DatabaseConnection =
-    Database::connect("postgres://user:password@localhost:5432/data_base")
-      .await
-      .unwrap();
-
+pub async fn get_task(
+  Extension(db): Extension<DatabaseConnection>,
+) -> Result<Json<Vec<TaskModel>>, APIError> {
   let task: Vec<TaskModel> = entity::task::Entity::find()
     .all(&db)
     .await
@@ -66,12 +61,10 @@ pub async fn get_task() -> Result<Json<Vec<TaskModel>>, APIError> {
   Ok(Json(task))
 }
 //Created
-pub async fn create_task(Json(task_data): Json<CreateTaskReq>) -> impl IntoResponse {
-  let db: DatabaseConnection =
-    Database::connect("postgres://user:password@localhost:5432/data_base")
-      .await
-      .unwrap();
-
+pub async fn create_task(
+  Extension(db): Extension<DatabaseConnection>,
+  Json(task_data): Json<CreateTaskReq>,
+) -> impl IntoResponse {
   let task_model = task::ActiveModel {
     name: Set(task_data.name.to_owned()),
     description: Set(task_data.description.to_owned()),
@@ -81,19 +74,15 @@ pub async fn create_task(Json(task_data): Json<CreateTaskReq>) -> impl IntoRespo
 
   task_model.insert(&db).await.unwrap();
 
-  db.close().await.unwrap();
+  // db.close().await.unwrap();
   (StatusCode::ACCEPTED, "Inserted")
 }
 //Update task
 pub async fn update_task(
+  Extension(db): Extension<DatabaseConnection>,
   Path(id): Path<i32>,
   Json(task_data): Json<UpdateTaskReq>,
 ) -> Result<(), APIError> {
-  let db: DatabaseConnection =
-    Database::connect("postgres://user:password@localhost:5432/data_base")
-      .await
-      .unwrap();
-
   let mut task: entity::task::ActiveModel = entity::task::Entity::find()
     .filter(entity::task::Column::Id.eq(id))
     .one(&db)
@@ -126,12 +115,10 @@ pub async fn update_task(
   Ok(())
 }
 //Delete Task
-pub async fn delete_task(Path(id): Path<i32>) -> Result<(), APIError> {
-  let db: DatabaseConnection =
-    Database::connect("postgres://user:password@localhost:5432/data_base")
-      .await
-      .unwrap();
-
+pub async fn delete_task(
+  Extension(db): Extension<DatabaseConnection>,
+  Path(id): Path<i32>,
+) -> Result<(), APIError> {
   let task = entity::task::Entity::find()
     .filter(entity::task::Column::Id.eq(id))
     .one(&db)
