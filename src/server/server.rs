@@ -10,7 +10,7 @@ pub async fn server_initial() {
     .expect("Failed to connect to db");
 
   let app: Router = Router::new()
-    .nest("/api/", initial_router())
+    .nest("/api/", initial_router(db.clone()))
     .layer(Extension(db));
 
   let listener = tokio::net::TcpListener::bind("0.0.0.0:4500").await.unwrap();
