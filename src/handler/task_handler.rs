@@ -1,71 +1,95 @@
 use crate::{
   model::task_model::{CreateTaskReq, TaskModel, UpdateTaskReq},
-  repository::task_repository::TaskRepository,
+  service::task_service::TaskService,
   utils::api_error::APIError,
 };
-use axum::{Extension, Json, extract::Path, http::StatusCode, response::IntoResponse};
+use axum::{Extension, Json, extract::Path, response::IntoResponse};
 use sea_orm::DatabaseConnection;
 
-pub struct TaskHandler;
+//get by id
+#[utoipa::path(
+  get,
+  path = "/tasks/{id}",
+  params(
+      ("id" = i32, Path, description = "ID from Task")
+  ),
+  responses(
+      (status = 200, body = TaskModel),
+      (status = 404, description = "Task not found")
+  )
+)]
+pub async fn get_task_by_id(
+  Extension(db): Extension<DatabaseConnection>,
+  Path(id): Path<i32>,
+) -> Result<Json<TaskModel>, APIError> {
+  TaskService::find_task_by_id(Extension(db), Path(id)).await
+}
 
-impl TaskHandler {
-  //get by id
-  pub async fn get_task_by_id(
-    Extension(db): Extension<DatabaseConnection>,
-    Path(id): Path<i32>,
-  ) -> Result<Json<TaskModel>, APIError> {
-    let task = TaskRepository::find_by_id(&db, id).await?;
-
-    let task_model = TaskModel {
-      id: task.id,
-      name: task.name,
-      description: task.description,
-      created_at: task.created_at,
-    };
-    Ok(Json(task_model))
-  }
-
-  //Get
-  pub async fn get_task(
-    Extension(db): Extension<DatabaseConnection>,
-  ) -> Result<Json<Vec<TaskModel>>, APIError> {
-    let task = TaskRepository::find_all(&db).await?;
-
-    let task_model: Vec<TaskModel> = task
-      .into_iter()
-      .map(|item| TaskModel {
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        created_at: item.created_at,
-      })
-      .collect();
-
-    Ok(Json(task_model))
-  }
-  //Created
-  pub async fn create_task(
-    Extension(db): Extension<DatabaseConnection>,
-    Json(task_data): Json<CreateTaskReq>,
-  ) -> Result<impl IntoResponse, APIError> {
-    TaskRepository::save(&db, &task_data).await?;
-    Ok((StatusCode::ACCEPTED, "Inserted"))
-  }
-  //Update task
-  pub async fn update_task(
-    Extension(db): Extension<DatabaseConnection>,
-    Path(id): Path<i32>,
-    Json(task_data): Json<UpdateTaskReq>,
-  ) -> Result<(), APIError> {
-    TaskRepository::update(&db, id, &task_data).await?;
-    Ok(())
-  }
-  //Delete Task
-  pub async fn delete_task(
-    Extension(db): Extension<DatabaseConnection>,
-    Path(id): Path<i32>,
-  ) -> Result<(), APIError> {
-    TaskRepository::delete(&db, id).await?;
-    Ok(())
-  }
+//Get
+#[utoipa::path(
+  get,
+  path = "/list",
+  responses(
+      (status = 200, body = TaskModel),
+      (status = 400, description = "Bad request")
+  )
+)]
+pub async fn get_task(
+  Extension(db): Extension<DatabaseConnection>,
+) -> Result<Json<Vec<TaskModel>>, APIError> {
+  TaskService::list_task(Extension(db)).await
+}
+//Created
+#[utoipa::path(
+  post,
+  path = "/insert",
+  request_body = CreateTaskReq,
+  responses(
+      (status = 200, body = TaskModel),
+      (status = 400, description = "Bad Request")
+  )
+)]
+pub async fn create_task(
+  Extension(db): Extension<DatabaseConnection>,
+  Json(task_data): Json<CreateTaskReq>,
+) -> Result<impl IntoResponse, APIError> {
+  TaskService::save_task(Extension(db), Json(task_data)).await
+}
+//Update task
+#[utoipa::path(
+  patch,
+  path = "/edit/{id}",
+  params(
+      ("id" = i32, Path, description = "ID from Task")
+  ),
+  request_body = UpdateTaskReq,
+  responses(
+      (status = 200, body = Value),
+      (status = 404, description = "Task not found")
+  )
+)]
+pub async fn update_task(
+  Extension(db): Extension<DatabaseConnection>,
+  Path(id): Path<i32>,
+  Json(task_data): Json<UpdateTaskReq>,
+) -> Result<(), APIError> {
+  TaskService::edit_task(Extension(db), Path(id), Json(task_data)).await
+}
+//Delete Task
+#[utoipa::path(
+  delete,
+  path = "/delete/{id}",
+  params(
+      ("id" = i32, Path, description = "ID from Task")
+  ),
+  responses(
+      (status = 200, body = Value),
+      (status = 404, description = "Task not found")
+  )
+)]
+pub async fn delete_task(
+  Extension(db): Extension<DatabaseConnection>,
+  Path(id): Path<i32>,
+) -> Result<(), APIError> {
+  TaskService::remove_task(Extension(db), Path(id)).await
 }
