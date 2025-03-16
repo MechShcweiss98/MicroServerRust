@@ -14,3 +14,20 @@ services:
       - "5432:5432"
     volumes:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  microserver:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:5599@db:5432/users
+    command: >
+      sh -c "until nc -z db 5432; do sleep 1; done &&
+             cargo run --release -- migrate fresh &&
+             /usr/local/bin/microserver"
+    ports:
+      - "8080:8080"
+
+volumes:
+  db-data:
