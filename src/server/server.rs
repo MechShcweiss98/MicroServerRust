@@ -3,7 +3,7 @@ use sea_orm::{Database, DatabaseConnection, DbErr};
 use sea_orm_migration::{MigrationTrait, MigratorTrait, SchemaManager};
 
 use crate::{router::router_task::initial_router, utils};
-use migration::m20220101_000001_create_table;
+use migration::m20220101_000001_create_table::Migration;
 
 pub struct Migrator;
 
@@ -12,18 +12,20 @@ impl MigratorTrait for Migrator {
   #[doc = " Vector of migrations in time sequence"]
   fn migrations() -> Vec<Box<dyn MigrationTrait>> {
     vec![
-      Box::new(m20220101_000001_create_table::Migration),
-      Box::new(m20220101_000002_add_column::Migration),
+      Box::new(Migration),
     ]
   }
 }
 //Migrator
 async fn run_migration(db: &DatabaseConnection) -> Result<(), DbErr> {
   let schema_manager = SchemaManager::new(db);
-
-  Migrator::up(db, None)
-    .await
-    .map_err(|e| sea_orm::DbErr::Custom(e.to_string()))?;
+  println!("Starting migration...");
+  
+  if let Err (e) = Migrator::up(db, None).await{
+    eprintln!("Error to execute migration: {}", e);
+    return Err(sea_orm::DbErr::Custom(e.to_string()));
+  }
+  println!("Migration completed successfully");
   Ok(())
 }
 
