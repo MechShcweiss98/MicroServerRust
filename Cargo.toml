@@ -21,7 +21,7 @@ sea-orm = { version = "0.12.14", features = [
     "runtime-tokio-rustls",
     "macros",
 ] }
-sea-orm-migration = "0.9"
+sea-orm-migration = "0.12.14"
 async-trait = "0.1"
 
 #serde
